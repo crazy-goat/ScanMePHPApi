@@ -44,3 +44,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Trigger Dokploy Deployment
+        run: |
+          curl -X POST "https://dokploy.crazy-goat.com/api/deploy/M4Nxuw2d5oXSTpHw9N6UK" \
+            -H "Content-Type: application/json" \
+            -d '{"image": "ghcr.io/${{ github.repository }}:${{ github.sha }}"}'
