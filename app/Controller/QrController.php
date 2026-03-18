@@ -6,7 +6,10 @@ use CrazyGoat\ScanMePHP\QRCodeConfig;
 use CrazyGoat\ScanMePHP\Renderer\SvgRenderer;
 use CrazyGoat\ScanMePHP\Renderer\PngRenderer;
 use CrazyGoat\ScanMePHP\Renderer\HtmlDivRenderer;
+use CrazyGoat\ScanMePHP\Renderer\HtmlTableRenderer;
 use CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer;
+use CrazyGoat\ScanMePHP\Renderer\HalfBlocksRenderer;
+use CrazyGoat\ScanMePHP\Renderer\SimpleRenderer;
 use support\Request;
 use support\Response;
 
@@ -38,12 +41,13 @@ class QrController
         $ecc = $this->mapEcc($request->get('ecc', self::DEFAULT_ECC));
         $margin = (int) $request->get('margin', self::DEFAULT_MARGIN);
         $moduleStyle = $request->get('moduleStyle', 'square');
+        $type = $request->get('type', '');
         $fg = '#' . ltrim($request->get('fg', '000000'), '#');
         $bg = '#' . ltrim($request->get('bg', 'FFFFFF'), '#');
         $label = $request->get('label', '');
         $invert = filter_var($request->get('invert', 'false'), FILTER_VALIDATE_BOOLEAN);
 
-        $renderer = $this->createRenderer($format, $moduleStyle, $margin);
+        $renderer = $this->createRenderer($format, $type, $margin);
         $config = new QRCodeConfig(
             engine: $renderer,
             errorCorrectionLevel: $ecc,
@@ -78,13 +82,20 @@ class QrController
         return new Response(200, $headers, $content);
     }
 
-    private function createRenderer(string $format, string $moduleStyle, int $margin): \CrazyGoat\ScanMePHP\RendererInterface
+    private function createRenderer(string $format, string $type, int $margin): \CrazyGoat\ScanMePHP\RendererInterface
     {
         return match ($format) {
             'svg' => new \CrazyGoat\ScanMePHP\Renderer\SvgRenderer(moduleSize: 10),
             'png' => new \CrazyGoat\ScanMePHP\Renderer\PngRenderer(moduleSize: 10),
-            'html' => new \CrazyGoat\ScanMePHP\Renderer\HtmlDivRenderer(moduleSize: 10, fullHtml: false),
-            'ascii' => new \CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer(sideMargin: $margin),
+            'html' => match ($type) {
+                'table' => new \CrazyGoat\ScanMePHP\Renderer\HtmlTableRenderer(moduleSize: 10, fullHtml: false),
+                default => new \CrazyGoat\ScanMePHP\Renderer\HtmlDivRenderer(moduleSize: 10, fullHtml: false),
+            },
+            'ascii' => match ($type) {
+                'half' => new \CrazyGoat\ScanMePHP\Renderer\HalfBlocksRenderer(sideMargin: $margin),
+                'simple' => new \CrazyGoat\ScanMePHP\Renderer\SimpleRenderer(sideMargin: $margin),
+                default => new \CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer(sideMargin: $margin),
+            },
             default => new \CrazyGoat\ScanMePHP\Renderer\SvgRenderer(moduleSize: 10),
         };
     }
