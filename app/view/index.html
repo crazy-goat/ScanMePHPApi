@@ -308,28 +308,14 @@
     .preview-area.has-content { border-style: solid; border-color: var(--border); }
     .preview-area.inverted { background: #000; }
 
-    /* Invert toggle inside preview */
-    .preview-invert-toggle {
-      position: absolute;
-      bottom: 12px;
-      right: 12px;
+    /* Invert toggle below preview */
+    .invert-option-below {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      background: rgba(15, 23, 42, 0.9);
-      backdrop-filter: blur(8px);
-      padding: 0.5rem 0.75rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      z-index: 5;
-    }
-    .preview-area.inverted .preview-invert-toggle {
-      background: rgba(0, 0, 0, 0.8);
-      border-color: #333;
-    }
-    .preview-invert-toggle .invert-label {
-      font-size: 0.75rem;
-      color: var(--muted);
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      padding: 0.5rem 0;
     }
 
     /* White wrapper so black QR codes are visible on dark bg */
@@ -669,15 +655,15 @@
       </div>
       <div id="preview-html"></div>
       <pre id="preview-ascii"></pre>
-      
-      <!-- INVERT TOGGLE INSIDE PREVIEW -->
-      <div class="preview-invert-toggle" id="preview-invert-toggle">
-        <label class="toggle-switch">
-          <input type="checkbox" id="invert-check" />
-          <span class="toggle-slider"></span>
-        </label>
-        <span class="invert-label">Inverted</span>
-      </div>
+    </div>
+
+    <!-- INVERT TOGGLE BELOW PREVIEW -->
+    <div class="invert-option-below" id="invert-option-below">
+      <label class="toggle-switch">
+        <input type="checkbox" id="invert-check" />
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="invert-label">Inverted colors</span>
     </div>
 
     <!-- ACTIONS -->
