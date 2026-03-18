@@ -496,14 +496,13 @@
 
     <!-- ACTIONS -->
     <div class="actions">
-      <button class="btn-preview" id="btn-preview">Preview</button>
-      <button class="btn-download" id="btn-download">
+      <button class="btn-download" id="btn-download" style="width: 100%;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-        Generate &amp; Download
+        Download
       </button>
     </div>
 
@@ -541,13 +540,13 @@
   const qrImgWrap = document.getElementById('qr-img-wrap');
   const previewHtml = document.getElementById('preview-html');
   const previewAscii = document.getElementById('preview-ascii');
-  const btnPreview = document.getElementById('btn-preview');
   const btnDownload = document.getElementById('btn-download');
   const errorMsg = document.getElementById('error-msg');
   const curlUrl = document.getElementById('curl-url');
   const copyBtn = document.getElementById('copy-btn');
 
   let currentFormat = 'svg';
+  let debounceTimer = null;
 
   // Format button selection
   fmtBtns.forEach(btn => {
@@ -557,6 +556,7 @@
       currentFormat = btn.dataset.format;
       updateSubOptions();
       updateCurl();
+      generatePreview();
     });
   });
 
@@ -596,9 +596,24 @@
     curlUrl.textContent = `"${url}"`;
   }
 
-  input.addEventListener('input', updateCurl);
+  input.addEventListener('input', () => {
+    updateCurl();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(generatePreview, 1000);
+  });
+  
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(debounceTimer);
+      generatePreview();
+    }
+  });
+  
   document.querySelectorAll('input[name="html_type"], input[name="ascii_type"]').forEach(r => {
-    r.addEventListener('change', updateCurl);
+    r.addEventListener('change', () => {
+      updateCurl();
+      generatePreview();
+    });
   });
 
   function showError(msg) {
@@ -622,7 +637,6 @@
   function setLoading(on) {
     previewSpinner.style.display = on ? 'block' : 'none';
     if (on) previewPlaceholder.style.display = 'none';
-    btnPreview.disabled = on;
     btnDownload.disabled = on;
   }
 
@@ -721,19 +735,11 @@
     }
   }
 
-  btnPreview.addEventListener('click', generatePreview);
-  btnDownload.addEventListener('click', async () => {
-    await generatePreview();
-    await generateDownload();
-  });
+  btnDownload.addEventListener('click', generateDownload);
 
-  // Enter key triggers preview
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') generatePreview();
-  });
-
-  // Init curl display
+  // Init curl display and first preview
   updateCurl();
+  generatePreview();
 </script>
 </body>
 </html>
