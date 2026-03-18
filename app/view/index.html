@@ -294,7 +294,8 @@
       background: var(--bg);
       border: 1px dashed var(--border);
       border-radius: 12px;
-      min-height: 240px;
+      height: 400px;
+      min-height: 400px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -311,11 +312,27 @@
       background: #fff;
       border-radius: 8px;
       padding: 12px;
-      margin: 1rem;
-      max-width: calc(100% - 2rem);
+      max-width: 90%;
+      max-height: 90%;
+      overflow: auto;
     }
-    .qr-img-wrap.visible { display: inline-flex; align-items: center; justify-content: center; }
-    .qr-img-wrap svg, .qr-img-wrap img { max-width: 100%; height: auto; display: block; }
+    .qr-img-wrap.visible { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    .qr-img-wrap svg { 
+      max-width: 100%; 
+      max-height: 360px; 
+      height: auto; 
+      display: block; 
+    }
+    .qr-img-wrap img { 
+      max-width: 100%; 
+      max-height: 360px; 
+      height: auto; 
+      display: block; 
+    }
 
     .preview-placeholder {
       display: flex;
@@ -359,6 +376,10 @@
       border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
