@@ -442,7 +442,7 @@
     <div>
       <div class="section-label">URL or Text</div>
       <div class="input-wrap">
-        <input type="text" id="data-input" placeholder="Enter URL or text..." autocomplete="off" spellcheck="false" />
+        <input type="text" id="data-input" placeholder="https://example.com" value="https://qrcode.crazy-goat.com" autocomplete="off" spellcheck="false" />
       </div>
     </div>
 
@@ -587,7 +587,7 @@
   }
 
   function updateCurl() {
-    const raw = input.value.trim() || 'hello world';
+    const raw = input.value.trim() || 'https://qrcode.crazy-goat.com';
     const encoded = btoa(unescape(encodeURIComponent(raw)));
     const sub = getSubParam();
     let url = `https://qrcode.crazy-goat.com/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}`;
