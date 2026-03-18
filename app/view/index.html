@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScanMePHP API</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #273549;
+      --border: #334155;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-dim: rgba(99,102,241,0.15);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --success: #10b981;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,23,42,0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg { width: 18px; height: 18px; fill: white; }
+
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: var(--text); border-color: var(--accent); background: var(--accent-dim); }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 4rem 1rem 2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #f1f5f9 30%, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.75rem;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* MAIN CARD */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 1rem 4rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* INPUT */
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    .input-wrap input::placeholder { color: var(--muted); }
+
+    /* FORMAT BUTTONS */
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .format-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .fmt-btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 0.6rem 0.5rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .fmt-btn:hover { border-color: var(--accent); color: var(--text); }
+    .fmt-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent-hover);
+    }
+
+    /* SUB-OPTIONS */
+    .sub-options {
+      display: none;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .sub-options.visible { display: flex; }
+
+    .sub-group {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .sub-group-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-right: 0.25rem;
+    }
+
+    .radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: color 0.1s;
+    }
+    .radio-opt input[type="radio"] { accent-color: var(--accent); cursor: pointer; }
+    .radio-opt:has(input:checked) { color: var(--text); }
+
+    /* PREVIEW */
+    .preview-area {
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .preview-area.has-content { border-style: solid; border-color: var(--border); }
+
+    /* White wrapper so black QR codes are visible on dark bg */
+    .qr-img-wrap {
+      display: none;
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 1rem;
+      max-width: calc(100% - 2rem);
+    }
+    .qr-img-wrap.visible { display: inline-flex; align-items: center; justify-content: center; }
+    .qr-img-wrap svg, .qr-img-wrap img { max-width: 100%; height: auto; display: block; }
+
+    .preview-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    .preview-placeholder svg { opacity: 0.3; }
+
+    #preview-img {
+      max-width: 100%;
+      max-height: 400px;
+      display: none;
+      border-radius: 4px;
+    }
+    #preview-html {
+      display: none;
+      padding: 1rem;
+      width: 100%;
+    }
+    #preview-ascii {
+      display: none;
+      font-family: monospace;
+      font-size: 0.55rem;
+      line-height: 1;
+      white-space: pre;
+      padding: 1rem;
+      color: var(--success);
+      overflow: auto;
+      max-height: 400px;
+    }
+
+    .preview-spinner {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* BUTTONS ROW */
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-preview {
+      flex: 1;
+      padding: 0.8rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-preview:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+    .btn-download {
+      flex: 2;
+      padding: 0.8rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-family: var(--font);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    .btn-download:hover { background: var(--accent-hover); }
+    .btn-download:active { transform: scale(0.98); }
+    .btn-download:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* CURL SECTION */
+    .curl-section {
+      width: 100%;
+      max-width: 620px;
+      margin-top: 2rem;
+    }
+
+    .curl-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .curl-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--text); }
+
+    .curl-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.8rem;
+      color: #a5f3fc;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .curl-box .prompt { color: var(--muted); user-select: none; }
+    .curl-box .cmd { color: #86efac; }
+    .curl-box .url { color: #a5f3fc; }
+
+    .docs-link-wrap {
+      text-align: center;
+      margin-top: 1.25rem;
+    }
+    .docs-link {
+      color: var(--accent-hover);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: gap 0.15s;
+    }
+    .docs-link:hover { gap: 0.5rem; }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ERROR */
+    .error-msg {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      color: #fca5a5;
+      font-size: 0.85rem;
+    }
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm11 0h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 0h2v2h-2v-2zm0 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/>
+      </svg>
+    </div>
+    ScanMePHP API
+  </div>
+  <a href="/docs" class="nav-link">API Docs</a>
+</nav>
+
+<div class="hero">
+  <h1>Generate QR Codes Instantly</h1>
+  <p>Fast, flexible QR code generation API. SVG, PNG, HTML, and ASCII — all from a simple HTTP request.</p>
+</div>
+
+<main>
+  <div class="card">
+
+    <!-- INPUT -->
+    <div>
+      <div class="section-label">URL or Text</div>
+      <div class="input-wrap">
+        <input type="text" id="data-input" placeholder="Enter URL or text..." autocomplete="off" spellcheck="false" />
+      </div>
+    </div>
+
+    <!-- FORMAT BUTTONS -->
+    <div>
+      <div class="section-label">Output Format</div>
+      <div class="format-buttons">
+        <button class="fmt-btn active" data-format="svg">SVG</button>
+        <button class="fmt-btn" data-format="png">PNG</button>
+        <button class="fmt-btn" data-format="html">HTML</button>
+        <button class="fmt-btn" data-format="ascii">ASCII</button>
+      </div>
+    </div>
+
+    <!-- SUB-OPTIONS -->
+    <div class="sub-options" id="sub-options">
+      <!-- HTML sub-options -->
+      <div class="sub-group" id="html-opts" style="display:none">
+        <span class="sub-group-label">HTML type:</span>
+        <label class="radio-opt"><input type="radio" name="html_type" value="div" checked /> Div</label>
+        <label class="radio-opt"><input type="radio" name="html_type" value="table" /> Table</label>
+      </div>
+      <!-- ASCII sub-options -->
+      <div class="sub-group" id="ascii-opts" style="display:none">
+        <span class="sub-group-label">ASCII type:</span>
+        <label class="radio-opt"><input type="radio" name="ascii_type" value="full" checked /> Full</label>
+        <label class="radio-opt"><input type="radio" name="ascii_type" value="half" /> Half</label>
+        <label class="radio-opt"><input type="radio" name="ascii_type" value="simple" /> Simple</label>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="error-msg" id="error-msg"></div>
+
+    <!-- PREVIEW -->
+    <div class="preview-area" id="preview-area">
+      <div class="preview-placeholder" id="preview-placeholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm11 0h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 0h2v2h-2v-2zm0 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/>
+        </svg>
+        <span>Preview will appear here</span>
+      </div>
+      <div class="preview-spinner" id="preview-spinner"></div>
+      <div class="qr-img-wrap" id="qr-img-wrap">
+        <img id="preview-img" alt="QR Code preview" />
+      </div>
+      <div id="preview-html"></div>
+      <pre id="preview-ascii"></pre>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn-preview" id="btn-preview">Preview</button>
+      <button class="btn-download" id="btn-download">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Generate &amp; Download
+      </button>
+    </div>
+
+  </div>
+
+  <!-- CURL SECTION -->
+  <div class="curl-section">
+    <div class="curl-header">
+      <span class="curl-title">Try it with curl</span>
+      <button class="copy-btn" id="copy-btn">Copy</button>
+    </div>
+    <div class="curl-box" id="curl-box">
+      <span class="prompt">$ </span><span class="cmd">curl</span> <span class="url" id="curl-url">"http://localhost:8787/api/qr?data=aGVsbG8gd29ybGQ%3D&amp;format=svg"</span>
+    </div>
+    <div class="docs-link-wrap">
+      <a href="/docs" class="docs-link">View Full API Documentation →</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  ScanMePHP API &mdash; QR code generation made simple
+</footer>
+
+<script>
+  const input = document.getElementById('data-input');
+  const fmtBtns = document.querySelectorAll('.fmt-btn');
+  const subOptions = document.getElementById('sub-options');
+  const htmlOpts = document.getElementById('html-opts');
+  const asciiOpts = document.getElementById('ascii-opts');
+  const previewArea = document.getElementById('preview-area');
+  const previewPlaceholder = document.getElementById('preview-placeholder');
+  const previewSpinner = document.getElementById('preview-spinner');
+  const previewImg = document.getElementById('preview-img');
+  const qrImgWrap = document.getElementById('qr-img-wrap');
+  const previewHtml = document.getElementById('preview-html');
+  const previewAscii = document.getElementById('preview-ascii');
+  const btnPreview = document.getElementById('btn-preview');
+  const btnDownload = document.getElementById('btn-download');
+  const errorMsg = document.getElementById('error-msg');
+  const curlUrl = document.getElementById('curl-url');
+  const copyBtn = document.getElementById('copy-btn');
+
+  let currentFormat = 'svg';
+
+  // Format button selection
+  fmtBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      fmtBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFormat = btn.dataset.format;
+      updateSubOptions();
+      updateCurl();
+    });
+  });
+
+  function updateSubOptions() {
+    const showHtml = currentFormat === 'html';
+    const showAscii = currentFormat === 'ascii';
+    htmlOpts.style.display = showHtml ? 'flex' : 'none';
+    asciiOpts.style.display = showAscii ? 'flex' : 'none';
+    subOptions.classList.toggle('visible', showHtml || showAscii);
+  }
+
+  function getSubParam() {
+    if (currentFormat === 'html') {
+      return document.querySelector('input[name="html_type"]:checked')?.value || 'div';
+    }
+    if (currentFormat === 'ascii') {
+      return document.querySelector('input[name="ascii_type"]:checked')?.value || 'full';
+    }
+    return null;
+  }
+
+  function buildUrl(mode = 'preview') {
+    const raw = input.value.trim() || 'hello world';
+    const encoded = btoa(unescape(encodeURIComponent(raw)));
+    const sub = getSubParam();
+    let url = `/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}&mode=${mode}`;
+    if (sub) url += `&type=${sub}`;
+    return url;
+  }
+
+  function updateCurl() {
+    const raw = input.value.trim() || 'hello world';
+    const encoded = btoa(unescape(encodeURIComponent(raw)));
+    const sub = getSubParam();
+    let url = `http://localhost:8787/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}`;
+    if (sub) url += `&type=${sub}`;
+    curlUrl.textContent = `"${url}"`;
+  }
+
+  input.addEventListener('input', updateCurl);
+  document.querySelectorAll('input[name="html_type"], input[name="ascii_type"]').forEach(r => {
+    r.addEventListener('change', updateCurl);
+  });
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+  function hideError() {
+    errorMsg.classList.remove('visible');
+  }
+
+  function clearPreview() {
+    qrImgWrap.classList.remove('visible');
+    qrImgWrap.innerHTML = '';
+    previewImg.style.display = 'none';
+    previewHtml.style.display = 'none';
+    previewAscii.style.display = 'none';
+    previewPlaceholder.style.display = 'flex';
+    previewArea.classList.remove('has-content');
+  }
+
+  function setLoading(on) {
+    previewSpinner.style.display = on ? 'block' : 'none';
+    if (on) previewPlaceholder.style.display = 'none';
+    btnPreview.disabled = on;
+    btnDownload.disabled = on;
+  }
+
+  async function generatePreview() {
+    if (!input.value.trim()) {
+      showError('Please enter a URL or text.');
+      return;
+    }
+    hideError();
+    clearPreview();
+    setLoading(true);
+
+    const url = buildUrl('preview');
+
+    try {
+      if (currentFormat === 'svg') {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+        const svgText = await resp.text();
+        // Inject SVG inline — strip black background rect so white wrapper shows
+        const cleaned = svgText.replace(/<rect width="[^"]*" height="[^"]*" fill="#000000"\/>/,'');
+        qrImgWrap.innerHTML = cleaned;
+        qrImgWrap.classList.add('visible');
+        previewPlaceholder.style.display = 'none';
+        previewArea.classList.add('has-content');
+      } else if (currentFormat === 'png') {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+        previewImg.src = objUrl;
+        previewImg.style.display = 'block';
+        qrImgWrap.appendChild(previewImg);
+        qrImgWrap.classList.add('visible');
+        previewPlaceholder.style.display = 'none';
+        previewArea.classList.add('has-content');
+      } else if (currentFormat === 'html') {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+        const text = await resp.text();
+        // Replace first black bg (outer wrapper) with white so QR is visible on dark theme
+        const fixed = text.replace('background:#000000;padding:0', 'background:#ffffff;padding:0');
+        qrImgWrap.innerHTML = fixed;
+        qrImgWrap.classList.add('visible');
+        previewPlaceholder.style.display = 'none';
+        previewArea.classList.add('has-content');
+      } else if (currentFormat === 'ascii') {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+        const text = await resp.text();
+        previewAscii.textContent = text;
+        previewAscii.style.display = 'block';
+        previewPlaceholder.style.display = 'none';
+        previewArea.classList.add('has-content');
+      }
+    } catch (e) {
+      showError(e.message || 'Failed to generate QR code.');
+      clearPreview();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateDownload() {
+    if (!input.value.trim()) {
+      showError('Please enter a URL or text.');
+      return;
+    }
+    hideError();
+    setLoading(true);
+
+    const url = buildUrl('download');
+    const ext = currentFormat === 'ascii' ? 'txt' : currentFormat;
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+      const blob = await resp.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `qrcode.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      showError(e.message || 'Failed to download QR code.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  btnPreview.addEventListener('click', generatePreview);
+  btnDownload.addEventListener('click', async () => {
+    await generatePreview();
+    await generateDownload();
+  });
+
+  // Enter key triggers preview
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') generatePreview();
+  });
+
+  // Init curl display
+  updateCurl();
+</script>
+</body>
+</html>

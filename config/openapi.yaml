@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  title: ScanMePHP API
+  description: Free QR code generation API powered by ScanMePHP library
+  version: 1.0.0
+servers:
+  - url: https://api.scanmephp.com
+    description: Production server
+paths:
+  /api/qr:
+    get:
+      summary: Generate QR code
+      description: Generates a QR code with specified parameters
+      parameters:
+        - name: data
+          in: query
+          required: true
+          description: Base64 encoded data to encode
+          schema:
+            type: string
+          example: "aHR0cHM6Ly5leGFtcGxlLmNvbQ=="
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [svg, png, html, ascii]
+            default: svg
+          description: Output format
+        - name: mode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [preview, download]
+            default: preview
+          description: "preview = inline, download = attachment"
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 40
+          description: QR version (1-40), auto if omitted
+        - name: ecc
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [L, M, Q, H]
+            default: M
+          description: Error correction level
+        - name: margin
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 4
+          description: Quiet zone in modules
+        - name: moduleStyle
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [square, rounded, dot]
+            default: square
+          description: Module style (SVG only)
+        - name: fg
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "000000"
+          description: Foreground color hex (without #)
+        - name: bg
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "FFFFFF"
+          description: Background color hex (without #)
+        - name: label
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Label below QR code
+        - name: invert
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Swap foreground/background
+      responses:
+        200:
+          description: QR code image
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            text/html:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
+        400:
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string

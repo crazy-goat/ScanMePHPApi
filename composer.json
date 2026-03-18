@@ -1,0 +1,21 @@
+{
+    "name": "scanmephp/api",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "workerman/webman": "^1.5",
+        "crazy-goat/scanmephp": "^0.4"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "crazy-goat/scanmephp": true
+        }
+    }
+}

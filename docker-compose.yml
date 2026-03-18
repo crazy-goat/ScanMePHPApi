@@ -1,0 +1,8 @@
+services:
+  webman:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      - APP_ENV=production
+    restart: unless-stopped
