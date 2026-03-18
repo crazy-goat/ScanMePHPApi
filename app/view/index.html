@@ -385,7 +385,7 @@
     #preview-ascii {
       display: none;
       font-family: 'JetBrains Mono', 'Courier New', monospace;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       line-height: 1;
       letter-spacing: 0;
       white-space: pre;
@@ -400,10 +400,26 @@
     .preview-area.inverted #preview-ascii {
       color: #fff;
       background: #000;
+      scrollbar-width: thin;
+      scrollbar-color: #333 #000;
+    }
+    .preview-area.inverted #preview-ascii::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .preview-area.inverted #preview-ascii::-webkit-scrollbar-track {
+      background: #000;
+    }
+    .preview-area.inverted #preview-ascii::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 4px;
+    }
+    .preview-area.inverted #preview-ascii::-webkit-scrollbar-thumb:hover {
+      background: #555;
     }
     @media (max-width: 480px) {
       #preview-ascii {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         padding: 0.5rem;
       }
     }
