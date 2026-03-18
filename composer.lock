@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "40863ba979cd2e514d62b19944ea121f",
+    "content-hash": "3bced92c93727060f9626e5a18d6ab05",
     "packages": [
         {
             "name": "crazy-goat/scanmephp",
-            "version": "v0.4.10",
+            "version": "v0.4.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/crazy-goat/ScanMePHP.git",
-                "reference": "5a7ea711e2f4fc73594f742845f7634040c852d2"
+                "reference": "b5de4056fc22ad945becc967f757ab85c207abed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/crazy-goat/ScanMePHP/zipball/5a7ea711e2f4fc73594f742845f7634040c852d2",
-                "reference": "5a7ea711e2f4fc73594f742845f7634040c852d2",
+                "url": "https://api.github.com/repos/crazy-goat/ScanMePHP/zipball/b5de4056fc22ad945becc967f757ab85c207abed",
+                "reference": "b5de4056fc22ad945becc967f757ab85c207abed",
                 "shasum": ""
             },
             "require": {
@@ -59,9 +59,9 @@
             ],
             "support": {
                 "issues": "https://github.com/crazy-goat/ScanMePHP/issues",
-                "source": "https://github.com/crazy-goat/ScanMePHP/tree/v0.4.10"
+                "source": "https://github.com/crazy-goat/ScanMePHP/tree/v0.4.11"
             },
-            "time": "2026-03-17T17:12:36+00:00"
+            "time": "2026-03-18T20:28:36+00:00"
         },
         {
             "name": "monolog/monolog",

@@ -4,9 +4,7 @@
     "require": {
         "php": ">=8.1",
         "workerman/webman": "^1.5",
-        "crazy-goat/scanmephp": "^0.4"
-    },
-    "require-dev": {
+        "crazy-goat/scanmephp": "^0.4.11"
     },
     "autoload": {
         "psr-4": {
