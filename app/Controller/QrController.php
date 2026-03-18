@@ -116,7 +116,7 @@ class QrController
             'svg' => 'image/svg+xml',
             'png' => 'image/png',
             'html' => 'text/html',
-            'ascii' => 'text/plain',
+            'ascii' => 'text/plain; charset=utf-8',
             default => 'application/octet-stream',
         };
     }
