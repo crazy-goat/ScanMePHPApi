@@ -469,8 +469,8 @@
       <!-- ASCII sub-options -->
       <div class="sub-group" id="ascii-opts" style="display:none">
         <span class="sub-group-label">ASCII type:</span>
-        <label class="radio-opt"><input type="radio" name="ascii_type" value="full" checked /> Full</label>
-        <label class="radio-opt"><input type="radio" name="ascii_type" value="half" /> Half</label>
+        <label class="radio-opt"><input type="radio" name="ascii_type" value="half" checked /> Half</label>
+        <label class="radio-opt"><input type="radio" name="ascii_type" value="full" /> Full</label>
         <label class="radio-opt"><input type="radio" name="ascii_type" value="simple" /> Simple</label>
       </div>
     </div>
@@ -573,7 +573,7 @@
       return document.querySelector('input[name="html_type"]:checked')?.value || 'div';
     }
     if (currentFormat === 'ascii') {
-      return document.querySelector('input[name="ascii_type"]:checked')?.value || 'full';
+      return document.querySelector('input[name="ascii_type"]:checked')?.value || 'half';
     }
     return null;
   }
