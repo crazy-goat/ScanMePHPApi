@@ -14,7 +14,7 @@ class QrController
 {
     private const DEFAULT_FORMAT = 'svg';
     private const DEFAULT_ECC = 'M';
-    private const DEFAULT_MARGIN = 4;
+    private const DEFAULT_MARGIN = 0;
 
     public function __invoke(Request $request): Response
     {
