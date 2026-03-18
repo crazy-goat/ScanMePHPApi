@@ -180,9 +180,62 @@
       color: var(--accent-hover);
     }
 
+    /* INVERTED OPTION */
+    .invert-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0.5rem 0;
+    }
+    .invert-label {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      cursor: pointer;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      transition: all 0.2s;
+    }
+    .toggle-slider:before {
+      content: "";
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background: var(--text);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+      background: var(--accent);
+    }
+
     /* SUB-OPTIONS */
     .sub-options {
-      display: none;
+      display: flex;
       gap: 1rem;
       flex-wrap: wrap;
     }
@@ -197,25 +250,44 @@
       align-items: center;
       gap: 0.5rem;
       flex-wrap: wrap;
+      width: 100%;
     }
     .sub-group-label {
       font-size: 0.75rem;
       font-weight: 600;
       color: var(--muted);
-      margin-right: 0.25rem;
+      margin-right: 0.5rem;
+    }
+
+    .sub-group-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .sub-btn {
+      flex: 1;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .sub-btn:hover { border-color: var(--accent); color: var(--text); }
+    .sub-btn.active { 
+      border-color: var(--accent); 
+      background: var(--accent-dim); 
+      color: var(--text);
     }
 
     .radio-opt {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      cursor: pointer;
-      font-size: 0.85rem;
-      color: var(--muted);
-      transition: color 0.1s;
+      display: none;
     }
-    .radio-opt input[type="radio"] { accent-color: var(--accent); cursor: pointer; }
-    .radio-opt:has(input:checked) { color: var(--text); }
 
     /* PREVIEW */
     .preview-area {
@@ -231,6 +303,7 @@
       transition: border-color 0.2s;
     }
     .preview-area.has-content { border-style: solid; border-color: var(--border); }
+    .preview-area.inverted { background: #000; }
 
     /* White wrapper so black QR codes are visible on dark bg */
     .qr-img-wrap {
@@ -447,6 +520,15 @@
       </div>
     </div>
 
+    <!-- INVERTED OPTION -->
+    <div class="invert-option">
+      <label class="toggle-switch">
+        <input type="checkbox" id="invert-check" />
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="invert-label">Inverted colors</span>
+    </div>
+
     <!-- FORMAT BUTTONS -->
     <div>
       <div class="section-label">Output Format</div>
@@ -461,17 +543,26 @@
     <!-- SUB-OPTIONS -->
     <div class="sub-options" id="sub-options">
       <!-- ASCII sub-options -->
-      <div class="sub-group" id="ascii-opts" style="display:none">
+      <div class="sub-group" id="ascii-opts" style="display:flex">
         <span class="sub-group-label">ASCII type:</span>
-        <label class="radio-opt"><input type="radio" name="ascii_type" value="half" checked /> Half</label>
-        <label class="radio-opt"><input type="radio" name="ascii_type" value="full" /> Full</label>
-        <label class="radio-opt"><input type="radio" name="ascii_type" value="simple" /> Simple</label>
+        <div class="sub-group-buttons">
+          <button class="sub-btn active" data-ascii-type="half">Half</button>
+          <button class="sub-btn" data-ascii-type="full">Full</button>
+          <button class="sub-btn" data-ascii-type="simple">Simple</button>
+        </div>
+        <input type="radio" name="ascii_type" value="half" checked style="display:none" />
+        <input type="radio" name="ascii_type" value="full" style="display:none" />
+        <input type="radio" name="ascii_type" value="simple" style="display:none" />
       </div>
       <!-- HTML sub-options -->
       <div class="sub-group" id="html-opts" style="display:none">
         <span class="sub-group-label">HTML type:</span>
-        <label class="radio-opt"><input type="radio" name="html_type" value="div" checked /> Div</label>
-        <label class="radio-opt"><input type="radio" name="html_type" value="table" /> Table</label>
+        <div class="sub-group-buttons">
+          <button class="sub-btn active" data-html-type="div">Div</button>
+          <button class="sub-btn" data-html-type="table">Table</button>
+        </div>
+        <input type="radio" name="html_type" value="div" checked style="display:none" />
+        <input type="radio" name="html_type" value="table" style="display:none" />
       </div>
     </div>
 
@@ -544,6 +635,7 @@
   const errorMsg = document.getElementById('error-msg');
   const curlUrl = document.getElementById('curl-url');
   const copyBtn = document.getElementById('copy-btn');
+  const invertCheck = document.getElementById('invert-check');
 
   let currentFormat = 'ascii';
   let debounceTimer = null;
@@ -566,6 +658,20 @@
     htmlOpts.style.display = showHtml ? 'flex' : 'none';
     asciiOpts.style.display = showAscii ? 'flex' : 'none';
     subOptions.classList.toggle('visible', showHtml || showAscii);
+    
+    // Sync button states with radio inputs
+    if (showAscii) {
+      const checkedVal = document.querySelector('input[name="ascii_type"]:checked')?.value || 'half';
+      document.querySelectorAll('.sub-btn[data-ascii-type]').forEach(b => {
+        b.classList.toggle('active', b.dataset.asciiType === checkedVal);
+      });
+    }
+    if (showHtml) {
+      const checkedVal = document.querySelector('input[name="html_type"]:checked')?.value || 'div';
+      document.querySelectorAll('.sub-btn[data-html-type]').forEach(b => {
+        b.classList.toggle('active', b.dataset.htmlType === checkedVal);
+      });
+    }
   }
 
   function getSubParam() {
@@ -582,8 +688,10 @@
     const raw = input.value.trim() || 'hello world';
     const encoded = btoa(unescape(encodeURIComponent(raw)));
     const sub = getSubParam();
+    const invert = invertCheck.checked;
     let url = `/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}&mode=${mode}`;
     if (sub) url += `&type=${sub}`;
+    if (invert) url += '&invert=true';
     return url;
   }
 
@@ -591,8 +699,10 @@
     const raw = input.value.trim() || 'https://qrcode.crazy-goat.com';
     const encoded = btoa(unescape(encodeURIComponent(raw)));
     const sub = getSubParam();
+    const invert = invertCheck.checked;
     let url = `https://qrcode.crazy-goat.com/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}`;
     if (sub) url += `&type=${sub}`;
+    if (invert) url += '&invert=true';
     curlUrl.textContent = `"${url}"`;
   }
 
@@ -609,11 +719,31 @@
     }
   });
   
-  document.querySelectorAll('input[name="html_type"], input[name="ascii_type"]').forEach(r => {
-    r.addEventListener('change', () => {
+  document.querySelectorAll('.sub-btn[data-ascii-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sub-btn[data-ascii-type]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const val = btn.dataset.asciiType;
+      document.querySelector(`input[name="ascii_type"][value="${val}"]`).checked = true;
       updateCurl();
       generatePreview();
     });
+  });
+
+  document.querySelectorAll('.sub-btn[data-html-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sub-btn[data-html-type]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const val = btn.dataset.htmlType;
+      document.querySelector(`input[name="html_type"][value="${val}"]`).checked = true;
+      updateCurl();
+      generatePreview();
+    });
+  });
+
+  invertCheck.addEventListener('change', () => {
+    updateCurl();
+    generatePreview();
   });
 
   function showError(msg) {
@@ -632,6 +762,7 @@
     previewAscii.style.display = 'none';
     previewPlaceholder.style.display = 'flex';
     previewArea.classList.remove('has-content');
+    previewArea.classList.remove('inverted');
   }
 
   function setLoading(on) {
@@ -650,6 +781,8 @@
     setLoading(true);
 
     const url = buildUrl('preview');
+    const isInverted = invertCheck.checked;
+    previewArea.classList.toggle('inverted', isInverted);
 
     try {
       const resp = await fetch(url);
