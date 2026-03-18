@@ -515,7 +515,7 @@
       <button class="copy-btn" id="copy-btn">Copy</button>
     </div>
     <div class="curl-box" id="curl-box">
-      <span class="prompt">$ </span><span class="cmd">curl</span> <span class="url" id="curl-url">"http://localhost:8787/api/qr?data=aGVsbG8gd29ybGQ%3D&amp;format=svg"</span>
+      <span class="prompt">$ </span><span class="cmd">curl</span> <span class="url" id="curl-url">"https://qrcode.crazy-goat.com/api/qr?data=aGVsbG8gd29ybGQ%3D&amp;format=svg"</span>
     </div>
     <div class="docs-link-wrap">
       <a href="/docs" class="docs-link">View Full API Documentation →</a>
@@ -590,7 +590,7 @@
     const raw = input.value.trim() || 'hello world';
     const encoded = btoa(unescape(encodeURIComponent(raw)));
     const sub = getSubParam();
-    let url = `http://localhost:8787/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}`;
+    let url = `https://qrcode.crazy-goat.com/api/qr?data=${encodeURIComponent(encoded)}&format=${currentFormat}`;
     if (sub) url += `&type=${sub}`;
     curlUrl.textContent = `"${url}"`;
   }
