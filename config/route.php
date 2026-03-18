@@ -22,3 +22,12 @@ Route::any('/openapi.yaml', [\App\Controller\OpenApiController::class, '__invoke
 
 Route::any('/docs', [\App\Controller\SwaggerUIController::class, '__invoke']);
 
+// Serve fonts statically
+Route::get('/fonts/{file}', function ($request, $file) {
+    $path = public_path() . '/fonts/' . $file;
+    if (file_exists($path)) {
+        return response()->file($path);
+    }
+    return response('Not found', 404);
+});
+

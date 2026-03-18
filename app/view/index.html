@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    @font-face {
+      font-family: 'JetBrains Mono';
+      src: url('/fonts/JetBrainsMono.ttf') format('truetype-variations');
+      font-weight: 100 800;
+      font-display: swap;
+    }
+  </style>
   <title>ScanMePHP API</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -357,7 +365,7 @@
     }
     #preview-ascii {
       display: none;
-      font-family: 'Courier New', 'Consolas', 'Monaco', 'Roboto Mono', 'DejaVu Sans Mono', monospace;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
       font-size: 0.55rem;
       line-height: 1;
       letter-spacing: 0;
