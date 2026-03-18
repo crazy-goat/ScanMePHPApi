@@ -451,27 +451,27 @@
     <div>
       <div class="section-label">Output Format</div>
       <div class="format-buttons">
-        <button class="fmt-btn active" data-format="svg">SVG</button>
+        <button class="fmt-btn active" data-format="ascii">ASCII</button>
+        <button class="fmt-btn" data-format="svg">SVG</button>
         <button class="fmt-btn" data-format="png">PNG</button>
         <button class="fmt-btn" data-format="html">HTML</button>
-        <button class="fmt-btn" data-format="ascii">ASCII</button>
       </div>
     </div>
 
     <!-- SUB-OPTIONS -->
     <div class="sub-options" id="sub-options">
-      <!-- HTML sub-options -->
-      <div class="sub-group" id="html-opts" style="display:none">
-        <span class="sub-group-label">HTML type:</span>
-        <label class="radio-opt"><input type="radio" name="html_type" value="div" checked /> Div</label>
-        <label class="radio-opt"><input type="radio" name="html_type" value="table" /> Table</label>
-      </div>
       <!-- ASCII sub-options -->
       <div class="sub-group" id="ascii-opts" style="display:none">
         <span class="sub-group-label">ASCII type:</span>
         <label class="radio-opt"><input type="radio" name="ascii_type" value="half" checked /> Half</label>
         <label class="radio-opt"><input type="radio" name="ascii_type" value="full" /> Full</label>
         <label class="radio-opt"><input type="radio" name="ascii_type" value="simple" /> Simple</label>
+      </div>
+      <!-- HTML sub-options -->
+      <div class="sub-group" id="html-opts" style="display:none">
+        <span class="sub-group-label">HTML type:</span>
+        <label class="radio-opt"><input type="radio" name="html_type" value="div" checked /> Div</label>
+        <label class="radio-opt"><input type="radio" name="html_type" value="table" /> Table</label>
       </div>
     </div>
 
@@ -545,7 +545,7 @@
   const curlUrl = document.getElementById('curl-url');
   const copyBtn = document.getElementById('copy-btn');
 
-  let currentFormat = 'svg';
+  let currentFormat = 'ascii';
   let debounceTimer = null;
 
   // Format button selection
