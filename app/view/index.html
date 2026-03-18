@@ -357,15 +357,24 @@
     }
     #preview-ascii {
       display: none;
-      font-family: monospace;
+      font-family: 'Courier New', 'Consolas', 'Monaco', 'Roboto Mono', 'DejaVu Sans Mono', monospace;
       font-size: 0.55rem;
       line-height: 1;
+      letter-spacing: 0;
       white-space: pre;
       padding: 1rem;
       color: #000;
       background: #fff;
       overflow: auto;
       max-height: 400px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    @media (max-width: 480px) {
+      #preview-ascii {
+        font-size: 0.4rem;
+        padding: 0.5rem;
+      }
     }
 
     .preview-spinner {
