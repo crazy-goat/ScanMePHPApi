@@ -28,6 +28,10 @@ class QrController
             return json(['error' => 'Invalid base64 data'], 400);
         }
 
+        if ($this->needsScheme($decoded)) {
+            $decoded = 'http://' . $decoded;
+        }
+
         $format = $request->get('format', self::DEFAULT_FORMAT);
         $mode = $request->get('mode', 'preview');
         $size = $request->get('size', 0);
@@ -51,9 +55,18 @@ class QrController
             invert: $invert
         );
 
-        $qr = new QRCode($decoded, $config);
-
-        $content = $qr->render();
+        try {
+            $qr = new QRCode($decoded, $config);
+            $content = $qr->render();
+        } catch (\CrazyGoat\ScanMePHP\Exception\InvalidDataException $e) {
+            $msg = $e->getMessage();
+            if (strpos($msg, 'Invalid URL') !== false) {
+                return json(['error' => 'Invalid URL format. Make sure it starts with http:// or https://'], 400);
+            }
+            return json(['error' => 'Invalid data: ' . $msg], 400);
+        } catch (\Throwable $e) {
+            return json(['error' => 'Failed to generate QR code: ' . $e->getMessage()], 400);
+        }
         $contentType = $this->getContentType($format);
         $filename = $this->getFilename($format);
 
@@ -106,5 +119,18 @@ class QrController
             'ascii' => 'qr.txt',
             default => 'qr.bin',
         };
+    }
+
+    private function needsScheme(string $data): bool
+    {
+        if (empty($data)) {
+            return false;
+        }
+
+        if (!filter_var($data, FILTER_VALIDATE_URL) && preg_match('/^[\w.-]+\.[a-zA-Z]{2,}$/', $data)) {
+            return true;
+        }
+
+        return false;
     }
 }

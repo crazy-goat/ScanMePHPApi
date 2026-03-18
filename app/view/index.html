@@ -637,19 +637,24 @@
     const url = buildUrl('preview');
 
     try {
+      const resp = await fetch(url);
+      const ct = resp.headers.get('content-type') || '';
+      
+      if (ct.includes('application/json')) {
+        const json = await resp.json();
+        throw new Error(json.error || 'Invalid request');
+      }
+      
+      if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+
       if (currentFormat === 'svg') {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
         const svgText = await resp.text();
-        // Inject SVG inline — strip black background rect so white wrapper shows
         const cleaned = svgText.replace(/<rect width="[^"]*" height="[^"]*" fill="#000000"\/>/,'');
         qrImgWrap.innerHTML = cleaned;
         qrImgWrap.classList.add('visible');
         previewPlaceholder.style.display = 'none';
         previewArea.classList.add('has-content');
       } else if (currentFormat === 'png') {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
         const blob = await resp.blob();
         const objUrl = URL.createObjectURL(blob);
         previewImg.src = objUrl;
@@ -659,18 +664,13 @@
         previewPlaceholder.style.display = 'none';
         previewArea.classList.add('has-content');
       } else if (currentFormat === 'html') {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
         const text = await resp.text();
-        // Replace first black bg (outer wrapper) with white so QR is visible on dark theme
         const fixed = text.replace('background:#000000;padding:0', 'background:#ffffff;padding:0');
         qrImgWrap.innerHTML = fixed;
         qrImgWrap.classList.add('visible');
         previewPlaceholder.style.display = 'none';
         previewArea.classList.add('has-content');
       } else if (currentFormat === 'ascii') {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
         const text = await resp.text();
         previewAscii.textContent = text;
         previewAscii.style.display = 'block';
@@ -698,6 +698,13 @@
 
     try {
       const resp = await fetch(url);
+      const ct = resp.headers.get('content-type') || '';
+      
+      if (ct.includes('application/json')) {
+        const json = await resp.json();
+        throw new Error(json.error || 'Invalid request');
+      }
+      
       if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
       const blob = await resp.blob();
       const a = document.createElement('a');
