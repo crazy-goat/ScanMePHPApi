@@ -12,10 +12,14 @@ RUN apt-get update && apt-get install -y \
 
 # Download and install ScanMePHP C extension (prebuilt binary)
 RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") && \
-    EXT_URL="https://github.com/crazy-goat/ScanMePHP/releases/download/v0.4.11/php-ext-linux-glibc-x86_64-php${PHP_VERSION}.so" && \
+    EXT_FILE="php-ext-linux-glibc-x86_64-php${PHP_VERSION}.so" && \
+    EXT_URL="https://github.com/crazy-goat/ScanMePHP/releases/download/v0.4.11/${EXT_FILE}" && \
     EXT_DIR=$(php -r "echo ini_get('extension_dir');") && \
-    curl -L -o "${EXT_DIR}/scanmeqr.so" "${EXT_URL}" && \
-    echo "extension=scanmeqr.so" > /usr/local/etc/php/conf.d/scanmeqr.ini
+    echo "Downloading ${EXT_URL}..." && \
+    curl -fsSL -o "${EXT_DIR}/scanmeqr.so" "${EXT_URL}" && \
+    ls -la "${EXT_DIR}/scanmeqr.so" && \
+    echo "extension=scanmeqr.so" > /usr/local/etc/php/conf.d/scanmeqr.ini && \
+    php -m | grep scanmeqr || echo "Extension not loaded yet (expected before composer install)"
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
