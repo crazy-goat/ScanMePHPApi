@@ -33,11 +33,13 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
         // Log request start
         if ($logger !== null) {
-            $logger->log(Severity::INFO, 'HTTP request started', [
-                'method' => $request->method(),
-                'path' => $request->path(),
-                'url' => $request->fullUrl(),
-            ]);
+            $logger->logRecordBuilder()
+                ->setSeverityNumber(Severity::INFO)
+                ->setBody('HTTP request started')
+                ->setAttribute('http.method', $request->method())
+                ->setAttribute('http.path', $request->path())
+                ->setAttribute('http.url', $request->fullUrl())
+                ->emit();
         }
 
         $span = $tracer->spanBuilder('http_request')
@@ -68,12 +70,13 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
             // Log successful response
             if ($logger !== null) {
-                $logger->log(Severity::INFO, 'HTTP request completed', [
-                    'method' => $request->method(),
-                    'path' => $request->path(),
-                    'status_code' => $response->getStatusCode(),
-                    'duration_ms' => 'N/A', // Would need timing
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::INFO)
+                    ->setBody('HTTP request completed')
+                    ->setAttribute('http.method', $request->method())
+                    ->setAttribute('http.path', $request->path())
+                    ->setAttribute('http.status_code', $response->getStatusCode())
+                    ->emit();
             }
             
             return $response;
@@ -83,14 +86,14 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
             
             // Log error
             if ($logger !== null) {
-                $logger->log(Severity::ERROR, 'HTTP request failed', [
-                    'method' => $request->method(),
-                    'path' => $request->path(),
-                    'error' => $e->getMessage(),
-                    'exception' => get_class($e),
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::ERROR)
+                    ->setBody('HTTP request failed')
+                    ->setAttribute('http.method', $request->method())
+                    ->setAttribute('http.path', $request->path())
+                    ->setAttribute('error', $e->getMessage())
+                    ->emit();
             }
-            
             throw $e;
         } finally {
             $span->end();

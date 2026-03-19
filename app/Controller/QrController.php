@@ -32,9 +32,11 @@ class QrController
         $data = $request->get('data');
         if (!$data) {
             if ($logger !== null) {
-                $logger->log(Severity::WARNING, 'QR generation failed - missing data parameter', [
-                    'client_ip' => $request->getRealIp(),
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::WARN)
+                    ->setBody('QR generation failed - missing data parameter')
+                    ->setAttribute('client_ip', $request->getRealIp())
+                    ->emit();
             }
             return json(['error' => 'Missing data parameter'], 400);
         }
@@ -42,9 +44,11 @@ class QrController
         $decoded = base64_decode($data, true);
         if ($decoded === false) {
             if ($logger !== null) {
-                $logger->log(Severity::WARNING, 'QR generation failed - invalid base64 data', [
-                    'client_ip' => $request->getRealIp(),
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::WARN)
+                    ->setBody('QR generation failed - invalid base64 data')
+                    ->setAttribute('client_ip', $request->getRealIp())
+                    ->emit();
             }
             return json(['error' => 'Invalid base64 data'], 400);
         }
@@ -102,13 +106,15 @@ class QrController
             
             // Log successful QR generation
             if ($logger !== null) {
-                $logger->log(Severity::INFO, 'QR code generated successfully', [
-                    'format' => $format,
-                    'size' => $size,
-                    'ecc' => $request->get('ecc', self::DEFAULT_ECC),
-                    'content_length' => strlen($content),
-                    'client_ip' => $request->getRealIp(),
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::INFO)
+                    ->setBody('QR code generated successfully')
+                    ->setAttribute('format', $format)
+                    ->setAttribute('size', $size)
+                    ->setAttribute('ecc', $request->get('ecc', self::DEFAULT_ECC))
+                    ->setAttribute('content_length', strlen($content))
+                    ->setAttribute('client_ip', $request->getRealIp())
+                    ->emit();
             }
         } catch (\CrazyGoat\ScanMePHP\Exception\InvalidDataException $e) {
             if ($qrSpan !== null) {
@@ -118,10 +124,12 @@ class QrController
             
             // Log validation error
             if ($logger !== null) {
-                $logger->log(Severity::WARNING, 'QR generation failed - invalid data', [
-                    'error' => $e->getMessage(),
-                    'client_ip' => $request->getRealIp(),
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::WARN)
+                    ->setBody('QR generation failed - invalid data')
+                    ->setAttribute('error', $e->getMessage())
+                    ->setAttribute('client_ip', $request->getRealIp())
+                    ->emit();
             }
             
             $msg = $e->getMessage();
@@ -137,11 +145,13 @@ class QrController
             
             // Log unexpected error
             if ($logger !== null) {
-                $logger->log(Severity::ERROR, 'QR generation failed - unexpected error', [
-                    'error' => $e->getMessage(),
-                    'exception' => get_class($e),
-                    'client_ip' => $request->getRealIp(),
-                ]);
+                $logger->logRecordBuilder()
+                    ->setSeverityNumber(Severity::ERROR)
+                    ->setBody('QR generation failed - unexpected error')
+                    ->setAttribute('error', $e->getMessage())
+                    ->setAttribute('exception', get_class($e))
+                    ->setAttribute('client_ip', $request->getRealIp())
+                    ->emit();
             }
             
             return json(['error' => 'Failed to generate QR code: ' . $e->getMessage()], 400);
