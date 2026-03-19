@@ -72,6 +72,9 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
         } finally {
             $span->end();
             $scope->detach();
+            // Force flush to ensure span is sent immediately
+            OpenTelemetryService::getInstance()->shutdown();
+            error_log("[OTel] Flushed to collector");
         }
     }
 }
