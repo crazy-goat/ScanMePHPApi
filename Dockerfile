@@ -9,16 +9,18 @@ RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     cmake \
-    && docker-php-ext-install zip pcntl \
+    libgd-dev \
+    libpng-dev \
+    && docker-php-ext-install zip pcntl gd \
     && apt-get clean
 
 # Download and build ScanMePHP C extension from release
 RUN cd /tmp && \
     git clone --depth 1 --branch v0.4.11 https://github.com/crazy-goat/ScanMePHP.git && \
     cd ScanMePHP && \
-    mkdir build && cd build && \
+    mkdir -p build && cd build && \
     cmake .. && \
-    make && \
+    make -j$(nproc) && \
     make install && \
     docker-php-ext-enable scanmeqr && \
     rm -rf /tmp/ScanMePHP
