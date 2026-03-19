@@ -13,7 +13,7 @@ use OpenTelemetry\SDK\Trace\Sampler\AlwaysOffSampler;
 use OpenTelemetry\SDK\Trace\Sampler\AlwaysOnSampler;
 use OpenTelemetry\SDK\Trace\Sampler\ParentBased;
 use OpenTelemetry\SDK\Trace\Sampler\TraceIdRatioBasedSampler;
-use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
+use OpenTelemetry\SDK\Trace\SpanProcessor\BatchSpanProcessorBuilder;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SDK\Logs\LoggerProvider;
 use OpenTelemetry\SDK\Logs\Processor\SimpleLogRecordProcessor;
@@ -28,6 +28,7 @@ class OpenTelemetryService
     private ?TracerProvider $tracerProvider = null;
     private ?LoggerProvider $loggerProvider = null;
     private ?MeterProvider $meterProvider = null;
+    private ?ExportingReader $metricReader = null;
     private ?TracerInterface $tracer = null;
     private ?LoggerInterface $logger = null;
     private ?MeterInterface $meter = null;
@@ -75,8 +76,10 @@ class OpenTelemetryService
 
         $sampler = $this->createSampler($config['traces']['sampler']);
 
+        $processor = (new BatchSpanProcessorBuilder($exporter))->build();
+
         $this->tracerProvider = new TracerProvider(
-            [new SimpleSpanProcessor($exporter)],
+            [$processor],
             $sampler,
             $this->resource
         );
@@ -114,11 +117,11 @@ class OpenTelemetryService
         $endpoint = $config['exporter']['endpoint'];
         $transport = (new OtlpHttpTransportFactory())->create($endpoint . '/v1/metrics', 'application/x-protobuf');
         $exporter = new MetricExporter($transport);
-        $reader = new ExportingReader($exporter);
+        $this->metricReader = new ExportingReader($exporter);
 
         $this->meterProvider = MeterProvider::builder()
             ->setResource($this->resource)
-            ->addReader($reader)
+            ->addReader($this->metricReader)
             ->build();
 
         $this->meter = $this->meterProvider->getMeter($config['service']['name']);
@@ -154,6 +157,11 @@ class OpenTelemetryService
     public function getMeter(): ?MeterInterface
     {
         return $this->meter;
+    }
+
+    public function getMetricReader(): ?ExportingReader
+    {
+        return $this->metricReader;
     }
 
     public function shutdown(): void

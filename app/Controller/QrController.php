@@ -1,18 +1,9 @@
 <?php
 namespace App\Controller;
 
-use App\Service\OpenTelemetryService;
+use App\Service\Telemetry;
 use CrazyGoat\ScanMePHP\QRCode;
 use CrazyGoat\ScanMePHP\QRCodeConfig;
-use CrazyGoat\ScanMePHP\Renderer\SvgRenderer;
-use CrazyGoat\ScanMePHP\Renderer\PngRenderer;
-use CrazyGoat\ScanMePHP\Renderer\HtmlDivRenderer;
-use CrazyGoat\ScanMePHP\Renderer\HtmlTableRenderer;
-use CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer;
-use CrazyGoat\ScanMePHP\Renderer\HalfBlocksRenderer;
-use CrazyGoat\ScanMePHP\Renderer\SimpleRenderer;
-use OpenTelemetry\API\Trace\StatusCode;
-use OpenTelemetry\API\Logs\Severity;
 use support\Request;
 use support\Response;
 
@@ -24,32 +15,15 @@ class QrController
 
     public function __invoke(Request $request): Response
     {
-        $tracer = OpenTelemetryService::getInstance()->getTracer();
-        $logger = OpenTelemetryService::getInstance()->getLogger();
-        $qrSpan = null;
-        $scope = null;
-
         $data = $request->get('data');
         if (!$data) {
-            if ($logger !== null) {
-                $logger->logRecordBuilder()
-                    ->setSeverityNumber(Severity::WARN)
-                    ->setBody('QR generation failed - missing data parameter')
-                    ->setAttribute('client_ip', $request->getRealIp())
-                    ->emit();
-            }
+            Telemetry::warn('QR generation failed - missing data parameter', ['client_ip' => $request->getRealIp()]);
             return json(['error' => 'Missing data parameter'], 400);
         }
 
         $decoded = base64_decode($data, true);
         if ($decoded === false) {
-            if ($logger !== null) {
-                $logger->logRecordBuilder()
-                    ->setSeverityNumber(Severity::WARN)
-                    ->setBody('QR generation failed - invalid base64 data')
-                    ->setAttribute('client_ip', $request->getRealIp())
-                    ->emit();
-            }
+            Telemetry::warn('QR generation failed - invalid base64 data', ['client_ip' => $request->getRealIp()]);
             return json(['error' => 'Invalid base64 data'], 400);
         }
 
@@ -69,19 +43,16 @@ class QrController
         $label = $request->get('label', '');
         $invert = filter_var($request->get('invert', 'false'), FILTER_VALIDATE_BOOLEAN);
 
-        if ($tracer !== null) {
-            $qrSpan = $tracer->spanBuilder('qr_generation')
-                ->setAttribute('qr.format', $format)
-                ->setAttribute('qr.size', $size)
-                ->setAttribute('qr.ecc', $request->get('ecc', self::DEFAULT_ECC))
-                ->setAttribute('qr.margin', $margin)
-                ->setAttribute('qr.module_style', $moduleStyle)
-                ->setAttribute('qr.type', $type)
-                ->setAttribute('qr.has_label', !empty($label))
-                ->setAttribute('qr.invert', $invert)
-                ->startSpan();
-            $scope = $qrSpan->activate();
-        }
+        $span = Telemetry::startSpan('qr_generation', [
+            'qr.format' => $format,
+            'qr.size' => $size,
+            'qr.ecc' => $request->get('ecc', self::DEFAULT_ECC),
+            'qr.margin' => $margin,
+            'qr.module_style' => $moduleStyle,
+            'qr.type' => $type,
+            'qr.has_label' => !empty($label),
+            'qr.invert' => $invert,
+        ]);
 
         $renderer = $this->createRenderer($format, $type, $margin);
         $config = new QRCodeConfig(
@@ -98,70 +69,34 @@ class QrController
         try {
             $qr = new QRCode($decoded, $config);
             $content = $qr->render();
-            
-            if ($qrSpan !== null) {
-                $qrSpan->setAttribute('qr.content_length', strlen($content));
-                $qrSpan->setStatus(StatusCode::STATUS_OK);
-            }
-            
-            // Log successful QR generation
-            if ($logger !== null) {
-                $logger->logRecordBuilder()
-                    ->setSeverityNumber(Severity::INFO)
-                    ->setBody('QR code generated successfully')
-                    ->setAttribute('format', $format)
-                    ->setAttribute('size', $size)
-                    ->setAttribute('ecc', $request->get('ecc', self::DEFAULT_ECC))
-                    ->setAttribute('content_length', strlen($content))
-                    ->setAttribute('client_ip', $request->getRealIp())
-                    ->emit();
-            }
+
+            $span?->setAttribute('qr.content_length', strlen($content));
+            $span?->setOk();
         } catch (\CrazyGoat\ScanMePHP\Exception\InvalidDataException $e) {
-            if ($qrSpan !== null) {
-                $qrSpan->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
-                $qrSpan->recordException($e);
-            }
-            
-            // Log validation error
-            if ($logger !== null) {
-                $logger->logRecordBuilder()
-                    ->setSeverityNumber(Severity::WARN)
-                    ->setBody('QR generation failed - invalid data')
-                    ->setAttribute('error', $e->getMessage())
-                    ->setAttribute('client_ip', $request->getRealIp())
-                    ->emit();
-            }
-            
+            $span?->recordException($e);
+            Telemetry::warn('QR generation failed - invalid data', [
+                'error' => $e->getMessage(),
+                'client_ip' => $request->getRealIp(),
+            ]);
+
             $msg = $e->getMessage();
             if (strpos($msg, 'Invalid URL') !== false) {
                 return json(['error' => 'Invalid URL format. Make sure it starts with http:// or https://'], 400);
             }
             return json(['error' => 'Invalid data: ' . $msg], 400);
         } catch (\Throwable $e) {
-            if ($qrSpan !== null) {
-                $qrSpan->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
-                $qrSpan->recordException($e);
-            }
-            
-            // Log unexpected error
-            if ($logger !== null) {
-                $logger->logRecordBuilder()
-                    ->setSeverityNumber(Severity::ERROR)
-                    ->setBody('QR generation failed - unexpected error')
-                    ->setAttribute('error', $e->getMessage())
-                    ->setAttribute('exception', get_class($e))
-                    ->setAttribute('client_ip', $request->getRealIp())
-                    ->emit();
-            }
-            
+            $span?->recordException($e);
+            Telemetry::error('QR generation failed - unexpected error', [
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+                'client_ip' => $request->getRealIp(),
+            ]);
+
             return json(['error' => 'Failed to generate QR code: ' . $e->getMessage()], 400);
         } finally {
-            if ($qrSpan !== null) {
-                $qrSpan->end();
-                $scope?->detach();
-            }
+            $span?->end();
         }
-        
+
         $contentType = $this->getContentType($format);
         $filename = $this->getFilename($format);
 

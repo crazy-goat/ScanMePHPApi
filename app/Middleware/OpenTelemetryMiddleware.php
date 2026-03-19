@@ -12,10 +12,17 @@ use Webman\MiddlewareInterface;
 class OpenTelemetryMiddleware implements MiddlewareInterface
 {
     private OpenTelemetryService $otelService;
+    private ?\OpenTelemetry\API\Metrics\CounterInterface $requestCounter = null;
+    private ?\OpenTelemetry\API\Metrics\HistogramInterface $responseTimeHistogram = null;
 
     public function __construct()
     {
         $this->otelService = OpenTelemetryService::getInstance();
+        $meter = $this->otelService->getMeter();
+        if ($meter !== null) {
+            $this->requestCounter = $meter->createCounter('http_requests_total', 'count', 'Total number of HTTP requests');
+            $this->responseTimeHistogram = $meter->createHistogram('http_response_time_ms', 'ms', 'HTTP response time in milliseconds');
+        }
     }
 
     public function process(Request $request, callable $handler): Response
@@ -26,33 +33,13 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
         $tracer = $this->otelService->getTracer();
         $logger = $this->otelService->getLogger();
-        $meter = $this->otelService->getMeter();
-        
+
         if ($tracer === null) {
             return $handler($request);
         }
 
-        // Create metrics counters if meter is available
-        $requestCounter = null;
-        $responseTimeHistogram = null;
-        if ($meter !== null) {
-            $requestCounter = $meter->createCounter('http_requests_total', 'count', 'Total number of HTTP requests');
-            $responseTimeHistogram = $meter->createHistogram('http_response_time_ms', 'ms', 'HTTP response time in milliseconds');
-        }
-
         // Start timing
         $startTime = microtime(true);
-
-        // Log request start
-        if ($logger !== null) {
-            $logger->logRecordBuilder()
-                ->setSeverityNumber(Severity::INFO)
-                ->setBody('HTTP request started')
-                ->setAttribute('http.method', $request->method())
-                ->setAttribute('http.path', $request->path())
-                ->setAttribute('http.url', $request->fullUrl())
-                ->emit();
-        }
 
         $span = $tracer->spanBuilder('http_request')
             ->setSpanKind(SpanKind::KIND_SERVER)
@@ -82,24 +69,23 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
             // Record metrics
             $duration = (microtime(true) - $startTime) * 1000;
-            if ($requestCounter !== null) {
-                $requestCounter->add(1, ['method' => $request->method(), 'status' => (string) $response->getStatusCode()]);
+            if ($this->requestCounter !== null) {
+                $this->requestCounter->add(1, ['method' => $request->method(), 'status' => (string) $response->getStatusCode()]);
             }
-            if ($responseTimeHistogram !== null) {
-                $responseTimeHistogram->record($duration, ['method' => $request->method(), 'status' => (string) $response->getStatusCode()]);
+            if ($this->responseTimeHistogram !== null) {
+                $this->responseTimeHistogram->record($duration, ['method' => $request->method(), 'status' => (string) $response->getStatusCode()]);
             }
 
-            // Log successful response
-            if ($logger !== null) {
+            if ($logger !== null && $response->getStatusCode() >= 400) {
                 $logger->logRecordBuilder()
-                    ->setSeverityNumber(Severity::INFO)
-                    ->setBody('HTTP request completed')
+                    ->setSeverityNumber($response->getStatusCode() >= 500 ? Severity::ERROR : Severity::WARN)
+                    ->setBody('HTTP request failed')
                     ->setAttribute('http.method', $request->method())
                     ->setAttribute('http.path', $request->path())
                     ->setAttribute('http.status_code', $response->getStatusCode())
                     ->emit();
             }
-            
+
             return $response;
         } catch (\Throwable $e) {
             $span->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
@@ -107,11 +93,11 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
             
             // Record error metric
             $duration = (microtime(true) - $startTime) * 1000;
-            if ($requestCounter !== null) {
-                $requestCounter->add(1, ['method' => $request->method(), 'status' => 'error']);
+            if ($this->requestCounter !== null) {
+                $this->requestCounter->add(1, ['method' => $request->method(), 'status' => 'error']);
             }
-            if ($responseTimeHistogram !== null) {
-                $responseTimeHistogram->record($duration, ['method' => $request->method(), 'status' => 'error']);
+            if ($this->responseTimeHistogram !== null) {
+                $this->responseTimeHistogram->record($duration, ['method' => $request->method(), 'status' => 'error']);
             }
             
             // Log error

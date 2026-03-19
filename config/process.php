@@ -35,6 +35,14 @@ return [
             'appPath' => app_path(),
             'publicPath' => public_path()
         ],
+        'onWorkerStart' => function () {
+            $reader = OpenTelemetryService::getInstance()->getMetricReader();
+            if ($reader) {
+                \Workerman\Timer::add(10, function () use ($reader) {
+                    $reader->collect();
+                });
+            }
+        },
         'onWorkerStop' => function () {
             OpenTelemetryService::getInstance()->shutdown();
         }
