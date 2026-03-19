@@ -2,28 +2,20 @@ FROM php:8.4-cli
 
 WORKDIR /app
 
-# Install dependencies and build tools for the extension
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
-    git \
-    build-essential \
-    cmake \
-    libgd-dev \
-    libpng-dev \
-    && docker-php-ext-install zip pcntl gd \
+    curl \
+    && docker-php-ext-install zip pcntl \
     && apt-get clean
 
-# Download and build ScanMePHP C extension from release
-RUN cd /tmp && \
-    git clone --depth 1 --branch v0.4.11 https://github.com/crazy-goat/ScanMePHP.git && \
-    cd ScanMePHP && \
-    mkdir -p build && cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    docker-php-ext-enable scanmeqr && \
-    rm -rf /tmp/ScanMePHP
+# Download and install ScanMePHP C extension (prebuilt binary)
+RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") && \
+    EXT_URL="https://github.com/crazy-goat/ScanMePHP/releases/download/v0.4.11/php-ext-linux-glibc-x86_64-php${PHP_VERSION}.so" && \
+    EXT_DIR=$(php -r "echo ini_get('extension_dir');") && \
+    curl -L -o "${EXT_DIR}/scanmeqr.so" "${EXT_URL}" && \
+    echo "extension=scanmeqr.so" > /usr/local/etc/php/conf.d/scanmeqr.ini
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
