@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Download ScanMePHP libraries
-RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") && \
+RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;") && \
     EXT_FILE="php-ext-linux-glibc-x86_64-php${PHP_VERSION}.so" && \
     LIB_FILE="libscanme_qr-linux-glibc-x86_64.so" && \
     echo "PHP Version: ${PHP_VERSION}" && \
@@ -19,7 +19,7 @@ RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") && \
     echo "Downloading library: ${LIB_FILE}"
 
 # Download PHP extension
-RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") && \
+RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;") && \
     curl -fsSL -o "/usr/local/lib/php/extensions/no-debug-non-zts-20240924/scanmeqr.so" \
     "https://github.com/crazy-goat/ScanMePHP/releases/download/v0.4.11/php-ext-linux-glibc-x86_64-php${PHP_VERSION}.so" && \
     echo "extension=scanmeqr.so" > /usr/local/etc/php/conf.d/scanmeqr.ini
