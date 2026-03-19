@@ -22,6 +22,11 @@ Route::any('/openapi.yaml', [\App\Controller\OpenApiController::class, '__invoke
 
 Route::any('/docs', [\App\Controller\SwaggerUIController::class, '__invoke']);
 
+// Health checks
+Route::get('/status/live', [\App\Controller\HealthController::class, 'live']);
+Route::get('/status/ready', [\App\Controller\HealthController::class, 'ready']);
+Route::get('/status/health', [\App\Controller\HealthController::class, 'health']);
+
 // Serve fonts statically
 Route::get('/fonts/{file}', function ($request, $file) {
     $path = public_path() . '/fonts/' . $file;
