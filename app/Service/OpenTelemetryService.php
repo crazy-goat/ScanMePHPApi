@@ -4,12 +4,13 @@ namespace App\Service;
 use OpenTelemetry\API\Trace\TracerInterface;
 use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
 use OpenTelemetry\Contrib\Otlp\SpanExporter;
-use OpenTelemetry\SDK\Resource\ResourceInfoFactory;
+use OpenTelemetry\SDK\Resource\ResourceInfo;
+use OpenTelemetry\SDK\Common\Attribute\Attributes;
 use OpenTelemetry\SDK\Trace\Sampler\AlwaysOffSampler;
 use OpenTelemetry\SDK\Trace\Sampler\AlwaysOnSampler;
 use OpenTelemetry\SDK\Trace\Sampler\ParentBased;
 use OpenTelemetry\SDK\Trace\Sampler\TraceIdRatioBasedSampler;
-use OpenTelemetry\SDK\Trace\SpanProcessor\BatchSpanProcessor;
+use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SemConv\ResourceAttributes;
 
@@ -42,12 +43,12 @@ class OpenTelemetryService
 
     private function initializeTracer(array $config): void
     {
-        $resource = ResourceInfoFactory::create([
+        $resource = ResourceInfo::create(Attributes::create([
             ResourceAttributes::SERVICE_NAME => $config['service']['name'],
             ResourceAttributes::SERVICE_VERSION => $config['service']['version'],
             ResourceAttributes::SERVICE_NAMESPACE => $config['service']['namespace'] ?? null,
-            ResourceAttributes::DEPLOYMENT_ENVIRONMENT => getenv('APP_ENV') ?: 'production',
-        ]);
+            ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => getenv('APP_ENV') ?: 'production',
+        ]));
 
         $endpoint = $config['exporter']['endpoint'];
         $transport = (new OtlpHttpTransportFactory())->create($endpoint . '/v1/traces', 'application/x-protobuf');
@@ -56,7 +57,7 @@ class OpenTelemetryService
         $sampler = $this->createSampler($config['traces']['sampler']);
 
         $this->tracerProvider = new TracerProvider(
-            [new BatchSpanProcessor($exporter)],
+            [new SimpleSpanProcessor($exporter)],
             $sampler,
             $resource
         );
