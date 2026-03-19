@@ -1,6 +1,7 @@
 <?php
 namespace App\Controller;
 
+use App\Service\OpenTelemetryService;
 use CrazyGoat\ScanMePHP\QRCode;
 use CrazyGoat\ScanMePHP\QRCodeConfig;
 use CrazyGoat\ScanMePHP\Renderer\SvgRenderer;
@@ -10,6 +11,7 @@ use CrazyGoat\ScanMePHP\Renderer\HtmlTableRenderer;
 use CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer;
 use CrazyGoat\ScanMePHP\Renderer\HalfBlocksRenderer;
 use CrazyGoat\ScanMePHP\Renderer\SimpleRenderer;
+use OpenTelemetry\API\Trace\StatusCode;
 use support\Request;
 use support\Response;
 
@@ -21,6 +23,10 @@ class QrController
 
     public function __invoke(Request $request): Response
     {
+        $tracer = OpenTelemetryService::getInstance()->getTracer();
+        $qrSpan = null;
+        $scope = null;
+
         $data = $request->get('data');
         if (!$data) {
             return json(['error' => 'Missing data parameter'], 400);
@@ -47,6 +53,20 @@ class QrController
         $label = $request->get('label', '');
         $invert = filter_var($request->get('invert', 'false'), FILTER_VALIDATE_BOOLEAN);
 
+        if ($tracer !== null) {
+            $qrSpan = $tracer->spanBuilder('qr_generation')
+                ->setAttribute('qr.format', $format)
+                ->setAttribute('qr.size', $size)
+                ->setAttribute('qr.ecc', $request->get('ecc', self::DEFAULT_ECC))
+                ->setAttribute('qr.margin', $margin)
+                ->setAttribute('qr.module_style', $moduleStyle)
+                ->setAttribute('qr.type', $type)
+                ->setAttribute('qr.has_label', !empty($label))
+                ->setAttribute('qr.invert', $invert)
+                ->startSpan();
+            $scope = $qrSpan->activate();
+        }
+
         $renderer = $this->createRenderer($format, $type, $margin);
         $config = new QRCodeConfig(
             engine: $renderer,
@@ -62,15 +82,34 @@ class QrController
         try {
             $qr = new QRCode($decoded, $config);
             $content = $qr->render();
+            
+            if ($qrSpan !== null) {
+                $qrSpan->setAttribute('qr.content_length', strlen($content));
+                $qrSpan->setStatus(StatusCode::STATUS_OK);
+            }
         } catch (\CrazyGoat\ScanMePHP\Exception\InvalidDataException $e) {
+            if ($qrSpan !== null) {
+                $qrSpan->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
+                $qrSpan->recordException($e);
+            }
             $msg = $e->getMessage();
             if (strpos($msg, 'Invalid URL') !== false) {
                 return json(['error' => 'Invalid URL format. Make sure it starts with http:// or https://'], 400);
             }
             return json(['error' => 'Invalid data: ' . $msg], 400);
         } catch (\Throwable $e) {
+            if ($qrSpan !== null) {
+                $qrSpan->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
+                $qrSpan->recordException($e);
+            }
             return json(['error' => 'Failed to generate QR code: ' . $e->getMessage()], 400);
+        } finally {
+            if ($qrSpan !== null) {
+                $qrSpan->end();
+                $scope?->detach();
+            }
         }
+        
         $contentType = $this->getContentType($format);
         $filename = $this->getFilename($format);
 
