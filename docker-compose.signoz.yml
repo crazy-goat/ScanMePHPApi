@@ -1,0 +1,22 @@
+# Example docker-compose for ScanMePHPApi with SigNoz
+# Add this service to your existing SigNoz docker-compose
+
+services:
+  scanmephp-api:
+    image: ghcr.io/crazy-goat/scanmephpapi:v1.2.0
+    environment:
+      # OpenTelemetry configuration for SigNoz
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=ScanMePHPApi
+      - OTEL_TRACES_SAMPLER=parentbased_always_on
+    ports:
+      - "8787:8787"
+    networks:
+      - signoz-net
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+
+networks:
+  signoz-net:
+    external: true
