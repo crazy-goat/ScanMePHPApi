@@ -4,6 +4,7 @@ namespace App\Service;
 use OpenTelemetry\API\Trace\TracerInterface;
 use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
 use OpenTelemetry\Contrib\Otlp\SpanExporter;
+use OpenTelemetry\Contrib\Otlp\LogsExporter;
 use OpenTelemetry\SDK\Resource\ResourceInfo;
 use OpenTelemetry\SDK\Common\Attribute\Attributes;
 use OpenTelemetry\SDK\Trace\Sampler\AlwaysOffSampler;
@@ -12,14 +13,21 @@ use OpenTelemetry\SDK\Trace\Sampler\ParentBased;
 use OpenTelemetry\SDK\Trace\Sampler\TraceIdRatioBasedSampler;
 use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
+use OpenTelemetry\SDK\Logs\LoggerProvider;
+use OpenTelemetry\SDK\Logs\Processor\SimpleLogRecordProcessor;
+use OpenTelemetry\SDK\Common\Instrumentation\InstrumentationScopeFactory;
+use OpenTelemetry\API\Logs\LoggerInterface;
 use OpenTelemetry\SemConv\ResourceAttributes;
 
 class OpenTelemetryService
 {
     private static ?self $instance = null;
     private ?TracerProvider $tracerProvider = null;
+    private ?LoggerProvider $loggerProvider = null;
     private ?TracerInterface $tracer = null;
+    private ?LoggerInterface $logger = null;
     private bool $enabled = false;
+    private ResourceInfo $resource;
 
     public static function getInstance(): self
     {
@@ -38,18 +46,23 @@ class OpenTelemetryService
         }
 
         $this->enabled = true;
+        $this->initializeResource($config);
         $this->initializeTracer($config);
+        $this->initializeLogger($config);
     }
 
-    private function initializeTracer(array $config): void
+    private function initializeResource(array $config): void
     {
-        $resource = ResourceInfo::create(Attributes::create([
+        $this->resource = ResourceInfo::create(Attributes::create([
             ResourceAttributes::SERVICE_NAME => $config['service']['name'],
             ResourceAttributes::SERVICE_VERSION => $config['service']['version'],
             ResourceAttributes::SERVICE_NAMESPACE => $config['service']['namespace'] ?? null,
             ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => getenv('APP_ENV') ?: 'production',
         ]));
+    }
 
+    private function initializeTracer(array $config): void
+    {
         $endpoint = $config['exporter']['endpoint'];
         $transport = (new OtlpHttpTransportFactory())->create($endpoint . '/v1/traces', 'application/x-protobuf');
         $exporter = new SpanExporter($transport);
@@ -59,13 +72,32 @@ class OpenTelemetryService
         $this->tracerProvider = new TracerProvider(
             [new SimpleSpanProcessor($exporter)],
             $sampler,
-            $resource
+            $this->resource
         );
 
         $this->tracer = $this->tracerProvider->getTracer(
             $config['service']['name'],
             $config['service']['version']
         );
+    }
+
+    private function initializeLogger(array $config): void
+    {
+        if (!$config['logs']['enabled']) {
+            return;
+        }
+
+        $endpoint = $config['exporter']['endpoint'];
+        $transport = (new OtlpHttpTransportFactory())->create($endpoint . '/v1/logs', 'application/x-protobuf');
+        $exporter = new LogsExporter($transport);
+
+        $this->loggerProvider = new LoggerProvider(
+            new SimpleLogRecordProcessor($exporter),
+            new InstrumentationScopeFactory($this->resource),
+            $this->resource
+        );
+
+        $this->logger = $this->loggerProvider->getLogger($config['service']['name']);
     }
 
     private function createSampler(string $samplerName): ParentBased
@@ -90,10 +122,18 @@ class OpenTelemetryService
         return $this->tracer;
     }
 
+    public function getLogger(): ?LoggerInterface
+    {
+        return $this->logger;
+    }
+
     public function shutdown(): void
     {
         if ($this->tracerProvider !== null) {
             $this->tracerProvider->shutdown();
+        }
+        if ($this->loggerProvider !== null) {
+            $this->loggerProvider->shutdown();
         }
     }
 }

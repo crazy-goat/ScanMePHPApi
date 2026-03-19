@@ -4,7 +4,7 @@ namespace App\Middleware;
 use App\Service\OpenTelemetryService;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
-use OpenTelemetry\Context\Context;
+use OpenTelemetry\API\Logs\LogLevel;
 use Webman\Http\Request;
 use Webman\Http\Response;
 use Webman\MiddlewareInterface;
@@ -20,20 +20,25 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
     public function process(Request $request, callable $handler): Response
     {
-        error_log("[OTel] Middleware started - OTel enabled: " . ($this->otelService->isEnabled() ? 'YES' : 'NO'));
-        
         if (!$this->otelService->isEnabled()) {
-            error_log("[OTel] Skipped - OTel not enabled");
             return $handler($request);
         }
 
         $tracer = $this->otelService->getTracer();
+        $logger = $this->otelService->getLogger();
+        
         if ($tracer === null) {
-            error_log("[OTel] Skipped - tracer not available");
             return $handler($request);
         }
 
-        error_log("[OTel] Creating span for: " . $request->method() . " " . $request->path());
+        // Log request start
+        if ($logger !== null) {
+            $logger->log(LogLevel::INFO, 'HTTP request started', [
+                'method' => $request->method(),
+                'path' => $request->path(),
+                'url' => $request->fullUrl(),
+            ]);
+        }
 
         $span = $tracer->spanBuilder('http_request')
             ->setSpanKind(SpanKind::KIND_SERVER)
@@ -61,20 +66,35 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
                 $span->setStatus(StatusCode::STATUS_OK);
             }
 
-            error_log("[OTel] Span ended successfully - Status: " . $response->getStatusCode());
+            // Log successful response
+            if ($logger !== null) {
+                $logger->log(LogLevel::INFO, 'HTTP request completed', [
+                    'method' => $request->method(),
+                    'path' => $request->path(),
+                    'status_code' => $response->getStatusCode(),
+                    'duration_ms' => 'N/A', // Would need timing
+                ]);
+            }
             
             return $response;
         } catch (\Throwable $e) {
-            error_log("[OTel] Span ended with error: " . $e->getMessage());
             $span->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
             $span->recordException($e);
+            
+            // Log error
+            if ($logger !== null) {
+                $logger->log(LogLevel::ERROR, 'HTTP request failed', [
+                    'method' => $request->method(),
+                    'path' => $request->path(),
+                    'error' => $e->getMessage(),
+                    'exception' => get_class($e),
+                ]);
+            }
+            
             throw $e;
         } finally {
             $span->end();
             $scope->detach();
-            // Force flush to ensure span is sent immediately
-            OpenTelemetryService::getInstance()->shutdown();
-            error_log("[OTel] Flushed to collector");
         }
     }
 }
