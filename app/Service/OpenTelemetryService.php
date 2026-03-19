@@ -15,7 +15,6 @@ use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SDK\Logs\LoggerProvider;
 use OpenTelemetry\SDK\Logs\Processor\SimpleLogRecordProcessor;
-use OpenTelemetry\SDK\Common\Instrumentation\InstrumentationScopeFactory;
 use OpenTelemetry\API\Logs\LoggerInterface;
 use OpenTelemetry\SemConv\ResourceAttributes;
 
@@ -91,11 +90,10 @@ class OpenTelemetryService
         $transport = (new OtlpHttpTransportFactory())->create($endpoint . '/v1/logs', 'application/x-protobuf');
         $exporter = new LogsExporter($transport);
 
-        $this->loggerProvider = new LoggerProvider(
-            new SimpleLogRecordProcessor($exporter),
-            new InstrumentationScopeFactory($this->resource),
-            $this->resource
-        );
+        $this->loggerProvider = LoggerProvider::builder()
+            ->addLogRecordProcessor(new SimpleLogRecordProcessor($exporter))
+            ->setResource($this->resource)
+            ->build();
 
         $this->logger = $this->loggerProvider->getLogger($config['service']['name']);
     }
