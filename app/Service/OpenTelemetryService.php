@@ -2,9 +2,11 @@
 namespace App\Service;
 
 use OpenTelemetry\API\Trace\TracerInterface;
+use OpenTelemetry\API\Metrics\MeterInterface;
 use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
 use OpenTelemetry\Contrib\Otlp\SpanExporter;
 use OpenTelemetry\Contrib\Otlp\LogsExporter;
+use OpenTelemetry\Contrib\Otlp\MetricExporter;
 use OpenTelemetry\SDK\Resource\ResourceInfo;
 use OpenTelemetry\SDK\Common\Attribute\Attributes;
 use OpenTelemetry\SDK\Trace\Sampler\AlwaysOffSampler;
@@ -15,6 +17,8 @@ use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SDK\Logs\LoggerProvider;
 use OpenTelemetry\SDK\Logs\Processor\SimpleLogRecordProcessor;
+use OpenTelemetry\SDK\Metrics\MeterProvider;
+use OpenTelemetry\SDK\Metrics\MetricReader\ExportingReader;
 use OpenTelemetry\API\Logs\LoggerInterface;
 use OpenTelemetry\SemConv\ResourceAttributes;
 
@@ -23,8 +27,10 @@ class OpenTelemetryService
     private static ?self $instance = null;
     private ?TracerProvider $tracerProvider = null;
     private ?LoggerProvider $loggerProvider = null;
+    private ?MeterProvider $meterProvider = null;
     private ?TracerInterface $tracer = null;
     private ?LoggerInterface $logger = null;
+    private ?MeterInterface $meter = null;
     private bool $enabled = false;
     private ResourceInfo $resource;
 
@@ -48,6 +54,7 @@ class OpenTelemetryService
         $this->initializeResource($config);
         $this->initializeTracer($config);
         $this->initializeLogger($config);
+        $this->initializeMetrics($config);
     }
 
     private function initializeResource(array $config): void
@@ -98,6 +105,25 @@ class OpenTelemetryService
         $this->logger = $this->loggerProvider->getLogger($config['service']['name']);
     }
 
+    private function initializeMetrics(array $config): void
+    {
+        if (!$config['metrics']['enabled']) {
+            return;
+        }
+
+        $endpoint = $config['exporter']['endpoint'];
+        $transport = (new OtlpHttpTransportFactory())->create($endpoint . '/v1/metrics', 'application/x-protobuf');
+        $exporter = new MetricExporter($transport);
+        $reader = new ExportingReader($exporter);
+
+        $this->meterProvider = MeterProvider::builder()
+            ->setResource($this->resource)
+            ->addReader($reader)
+            ->build();
+
+        $this->meter = $this->meterProvider->getMeter($config['service']['name']);
+    }
+
     private function createSampler(string $samplerName): ParentBased
     {
         $rootSampler = match ($samplerName) {
@@ -125,6 +151,11 @@ class OpenTelemetryService
         return $this->logger;
     }
 
+    public function getMeter(): ?MeterInterface
+    {
+        return $this->meter;
+    }
+
     public function shutdown(): void
     {
         if ($this->tracerProvider !== null) {
@@ -132,6 +163,9 @@ class OpenTelemetryService
         }
         if ($this->loggerProvider !== null) {
             $this->loggerProvider->shutdown();
+        }
+        if ($this->meterProvider !== null) {
+            $this->meterProvider->shutdown();
         }
     }
 }

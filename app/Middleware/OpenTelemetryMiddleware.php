@@ -26,10 +26,22 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
         $tracer = $this->otelService->getTracer();
         $logger = $this->otelService->getLogger();
+        $meter = $this->otelService->getMeter();
         
         if ($tracer === null) {
             return $handler($request);
         }
+
+        // Create metrics counters if meter is available
+        $requestCounter = null;
+        $responseTimeHistogram = null;
+        if ($meter !== null) {
+            $requestCounter = $meter->createCounter('http_requests_total', 'count', 'Total number of HTTP requests');
+            $responseTimeHistogram = $meter->createHistogram('http_response_time_ms', 'ms', 'HTTP response time in milliseconds');
+        }
+
+        // Start timing
+        $startTime = microtime(true);
 
         // Log request start
         if ($logger !== null) {
@@ -68,6 +80,15 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
                 $span->setStatus(StatusCode::STATUS_OK);
             }
 
+            // Record metrics
+            $duration = (microtime(true) - $startTime) * 1000;
+            if ($requestCounter !== null) {
+                $requestCounter->add(1, ['method' => $request->method(), 'status' => (string) $response->getStatusCode()]);
+            }
+            if ($responseTimeHistogram !== null) {
+                $responseTimeHistogram->record($duration, ['method' => $request->method(), 'status' => (string) $response->getStatusCode()]);
+            }
+
             // Log successful response
             if ($logger !== null) {
                 $logger->logRecordBuilder()
@@ -83,6 +104,15 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
         } catch (\Throwable $e) {
             $span->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
             $span->recordException($e);
+            
+            // Record error metric
+            $duration = (microtime(true) - $startTime) * 1000;
+            if ($requestCounter !== null) {
+                $requestCounter->add(1, ['method' => $request->method(), 'status' => 'error']);
+            }
+            if ($responseTimeHistogram !== null) {
+                $responseTimeHistogram->record($duration, ['method' => $request->method(), 'status' => 'error']);
+            }
             
             // Log error
             if ($logger !== null) {
