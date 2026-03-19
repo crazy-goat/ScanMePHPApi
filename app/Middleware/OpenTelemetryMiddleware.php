@@ -4,7 +4,7 @@ namespace App\Middleware;
 use App\Service\OpenTelemetryService;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
-use OpenTelemetry\API\Logs\LogLevel;
+use OpenTelemetry\API\Logs\Severity;
 use Webman\Http\Request;
 use Webman\Http\Response;
 use Webman\MiddlewareInterface;
@@ -33,7 +33,7 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
         // Log request start
         if ($logger !== null) {
-            $logger->log(LogLevel::INFO, 'HTTP request started', [
+            $logger->log(Severity::INFO, 'HTTP request started', [
                 'method' => $request->method(),
                 'path' => $request->path(),
                 'url' => $request->fullUrl(),
@@ -68,7 +68,7 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
             // Log successful response
             if ($logger !== null) {
-                $logger->log(LogLevel::INFO, 'HTTP request completed', [
+                $logger->log(Severity::INFO, 'HTTP request completed', [
                     'method' => $request->method(),
                     'path' => $request->path(),
                     'status_code' => $response->getStatusCode(),
@@ -83,7 +83,7 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
             
             // Log error
             if ($logger !== null) {
-                $logger->log(LogLevel::ERROR, 'HTTP request failed', [
+                $logger->log(Severity::ERROR, 'HTTP request failed', [
                     'method' => $request->method(),
                     'path' => $request->path(),
                     'error' => $e->getMessage(),

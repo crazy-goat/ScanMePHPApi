@@ -12,7 +12,7 @@ use CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer;
 use CrazyGoat\ScanMePHP\Renderer\HalfBlocksRenderer;
 use CrazyGoat\ScanMePHP\Renderer\SimpleRenderer;
 use OpenTelemetry\API\Trace\StatusCode;
-use OpenTelemetry\API\Logs\LogLevel;
+use OpenTelemetry\API\Logs\Severity;
 use support\Request;
 use support\Response;
 
@@ -32,7 +32,7 @@ class QrController
         $data = $request->get('data');
         if (!$data) {
             if ($logger !== null) {
-                $logger->log(LogLevel::WARNING, 'QR generation failed - missing data parameter', [
+                $logger->log(Severity::WARNING, 'QR generation failed - missing data parameter', [
                     'client_ip' => $request->getRealIp(),
                 ]);
             }
@@ -42,7 +42,7 @@ class QrController
         $decoded = base64_decode($data, true);
         if ($decoded === false) {
             if ($logger !== null) {
-                $logger->log(LogLevel::WARNING, 'QR generation failed - invalid base64 data', [
+                $logger->log(Severity::WARNING, 'QR generation failed - invalid base64 data', [
                     'client_ip' => $request->getRealIp(),
                 ]);
             }
@@ -102,7 +102,7 @@ class QrController
             
             // Log successful QR generation
             if ($logger !== null) {
-                $logger->log(LogLevel::INFO, 'QR code generated successfully', [
+                $logger->log(Severity::INFO, 'QR code generated successfully', [
                     'format' => $format,
                     'size' => $size,
                     'ecc' => $request->get('ecc', self::DEFAULT_ECC),
@@ -118,7 +118,7 @@ class QrController
             
             // Log validation error
             if ($logger !== null) {
-                $logger->log(LogLevel::WARNING, 'QR generation failed - invalid data', [
+                $logger->log(Severity::WARNING, 'QR generation failed - invalid data', [
                     'error' => $e->getMessage(),
                     'client_ip' => $request->getRealIp(),
                 ]);
@@ -137,7 +137,7 @@ class QrController
             
             // Log unexpected error
             if ($logger !== null) {
-                $logger->log(LogLevel::ERROR, 'QR generation failed - unexpected error', [
+                $logger->log(Severity::ERROR, 'QR generation failed - unexpected error', [
                     'error' => $e->getMessage(),
                     'exception' => get_class($e),
                     'client_ip' => $request->getRealIp(),
