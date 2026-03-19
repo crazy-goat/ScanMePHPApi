@@ -41,4 +41,8 @@ COPY . .
 
 EXPOSE 8787
 
+# Health checks - using PHP instead of curl
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD php healthcheck.php || exit 1
+
 CMD ["php", "start.php", "start"]
