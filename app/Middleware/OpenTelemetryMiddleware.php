@@ -20,14 +20,20 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
 
     public function process(Request $request, callable $handler): Response
     {
+        error_log("[OTel] Middleware started - OTel enabled: " . ($this->otelService->isEnabled() ? 'YES' : 'NO'));
+        
         if (!$this->otelService->isEnabled()) {
+            error_log("[OTel] Skipped - OTel not enabled");
             return $handler($request);
         }
 
         $tracer = $this->otelService->getTracer();
         if ($tracer === null) {
+            error_log("[OTel] Skipped - tracer not available");
             return $handler($request);
         }
+
+        error_log("[OTel] Creating span for: " . $request->method() . " " . $request->path());
 
         $span = $tracer->spanBuilder('http_request')
             ->setSpanKind(SpanKind::KIND_SERVER)
@@ -55,8 +61,11 @@ class OpenTelemetryMiddleware implements MiddlewareInterface
                 $span->setStatus(StatusCode::STATUS_OK);
             }
 
+            error_log("[OTel] Span ended successfully - Status: " . $response->getStatusCode());
+            
             return $response;
         } catch (\Throwable $e) {
+            error_log("[OTel] Span ended with error: " . $e->getMessage());
             $span->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
             $span->recordException($e);
             throw $e;
