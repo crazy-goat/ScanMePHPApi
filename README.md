@@ -59,7 +59,22 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://your-collector:4318
 export OTEL_SERVICE_NAME=scanme-php-api
 ```
 
-Environment variables:
+### SigNoz Integration
+
+For SigNoz observability platform:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+export OTEL_SERVICE_NAME=ScanMePHPApi
+```
+
+Or use the provided docker-compose:
+```bash
+docker-compose -f docker-compose.signoz.yml up -d
+```
+
+### Environment Variables
+
 - `OTEL_EXPORTER_OTLP_ENDPOINT` - OTLP collector URL (required to enable)
 - `OTEL_SERVICE_NAME` - Service name (default: scanme-php-api)
 - `OTEL_TRACES_SAMPLER` - Sampler strategy (default: parentbased_always_on)
