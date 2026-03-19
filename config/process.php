@@ -15,6 +15,7 @@
 use support\Log;
 use support\Request;
 use app\process\Http;
+use App\Service\OpenTelemetryService;
 
 global $argv;
 
@@ -33,7 +34,10 @@ return [
             'logger' => Log::channel('default'),
             'appPath' => app_path(),
             'publicPath' => public_path()
-        ]
+        ],
+        'onWorkerStop' => function () {
+            OpenTelemetryService::getInstance()->shutdown();
+        }
     ],
     // File update detection and automatic reload
     'monitor' => [
