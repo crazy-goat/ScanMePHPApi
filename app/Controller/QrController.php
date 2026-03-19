@@ -12,6 +12,7 @@ use CrazyGoat\ScanMePHP\Renderer\FullBlocksRenderer;
 use CrazyGoat\ScanMePHP\Renderer\HalfBlocksRenderer;
 use CrazyGoat\ScanMePHP\Renderer\SimpleRenderer;
 use OpenTelemetry\API\Trace\StatusCode;
+use OpenTelemetry\API\Logs\LogLevel;
 use support\Request;
 use support\Response;
 
@@ -24,16 +25,27 @@ class QrController
     public function __invoke(Request $request): Response
     {
         $tracer = OpenTelemetryService::getInstance()->getTracer();
+        $logger = OpenTelemetryService::getInstance()->getLogger();
         $qrSpan = null;
         $scope = null;
 
         $data = $request->get('data');
         if (!$data) {
+            if ($logger !== null) {
+                $logger->log(LogLevel::WARNING, 'QR generation failed - missing data parameter', [
+                    'client_ip' => $request->getRealIp(),
+                ]);
+            }
             return json(['error' => 'Missing data parameter'], 400);
         }
 
         $decoded = base64_decode($data, true);
         if ($decoded === false) {
+            if ($logger !== null) {
+                $logger->log(LogLevel::WARNING, 'QR generation failed - invalid base64 data', [
+                    'client_ip' => $request->getRealIp(),
+                ]);
+            }
             return json(['error' => 'Invalid base64 data'], 400);
         }
 
@@ -87,11 +99,31 @@ class QrController
                 $qrSpan->setAttribute('qr.content_length', strlen($content));
                 $qrSpan->setStatus(StatusCode::STATUS_OK);
             }
+            
+            // Log successful QR generation
+            if ($logger !== null) {
+                $logger->log(LogLevel::INFO, 'QR code generated successfully', [
+                    'format' => $format,
+                    'size' => $size,
+                    'ecc' => $request->get('ecc', self::DEFAULT_ECC),
+                    'content_length' => strlen($content),
+                    'client_ip' => $request->getRealIp(),
+                ]);
+            }
         } catch (\CrazyGoat\ScanMePHP\Exception\InvalidDataException $e) {
             if ($qrSpan !== null) {
                 $qrSpan->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
                 $qrSpan->recordException($e);
             }
+            
+            // Log validation error
+            if ($logger !== null) {
+                $logger->log(LogLevel::WARNING, 'QR generation failed - invalid data', [
+                    'error' => $e->getMessage(),
+                    'client_ip' => $request->getRealIp(),
+                ]);
+            }
+            
             $msg = $e->getMessage();
             if (strpos($msg, 'Invalid URL') !== false) {
                 return json(['error' => 'Invalid URL format. Make sure it starts with http:// or https://'], 400);
@@ -102,6 +134,16 @@ class QrController
                 $qrSpan->setStatus(StatusCode::STATUS_ERROR, $e->getMessage());
                 $qrSpan->recordException($e);
             }
+            
+            // Log unexpected error
+            if ($logger !== null) {
+                $logger->log(LogLevel::ERROR, 'QR generation failed - unexpected error', [
+                    'error' => $e->getMessage(),
+                    'exception' => get_class($e),
+                    'client_ip' => $request->getRealIp(),
+                ]);
+            }
+            
             return json(['error' => 'Failed to generate QR code: ' . $e->getMessage()], 400);
         } finally {
             if ($qrSpan !== null) {
